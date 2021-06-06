@@ -64,6 +64,14 @@ struct vbe_mode_info_structure {
 	uint8 reserved1[206];
 } __attribute__ ((packed));
 
+struct IDTDescr {
+   uint16 offset_1; // offset bits 0..15
+   uint16 selector; // a code segment selector in GDT or LDT
+   uint8 zero;      // unused, set to 0
+   uint8 type_attr; // type and attributes, see below
+   uint16 offset_2; // offset bits 16..31
+};
+
 void sleep(int time) {
 	asm("mov al, 0x36");
 	asm("out 0x43, al");
@@ -119,59 +127,114 @@ void draw(uint32 fb, uint16 pitch, struct point p, int c) {
 	*pixel = c;
 }
 
+#include "font.h"
+
+void print(uint32 fb, uint16 pitch, int c) {
+//	const unsigned char ch[] = {
+//		0x00, 0x00, 0x7e, 0xff,
+//		0xdb, 0xff, 0xff, 0xc3, 0xe7, 0xff, 0xff, 0x7e, 0x00, 0x00, 0x00, 0x00
+//	};
+	//const uint8 *ch = font + c*16;
+	for (int cy = 0; cy < 16; cy++) {
+		for (int cx = 0; cx < 8; cx++) {
+			draw(fb, pitch, (struct point){cx + 16*(c%50),cy + 32*(c/50)}, font[16*c + cy]&(1<<cx)?0x01:0x08);
+			//draw(fb, pitch, (struct point){cx + 16*(c%50),cy + 32*(c/50)}, ch[cy]&(1<<cx)?0x01:0x08);
+		}
+	}
+}
+
 void _main() {
-//    asm("mov ax, 0x4f02");
-//    asm("mov bx, 0x112");
-//    asm("int 0x10");
+	/*
+	// Save bios font
+	uint8 font[4096];
+	//asm("mov eax, %0"
+	//	:
+	//	:"g"(&font));
+	//asm("mov di, ax");
+	asm("mov ax, 0x1130");
+	asm("mov bh, 0x06");
+	asm("int 0x10");
+
+	int font_es;
+	int font_bp;
+	asm("mov ax, es");
+	asm("mov %0, eax"
+		:"=a"(font_es));
+
+	asm("mov ax, bp");
+	asm("mov %0, eax"
+		:"=a"(font_bp));
+	uint8 *font_ptr = font_bp;
+
+	for (int i = 0; i < 4096; i++) {
+		font[i] = font_ptr[i];
+	}
+	*/
+
+    asm("mov eax, 0x4f02");
+    asm("mov ebx, 0x4103");
+    asm("int 0x10");
 
 	struct vbe_info_structure vi;
 	vi.signature[0] = 'V';
 	vi.signature[1] = 'E';
 	vi.signature[2] = 'S';
 	vi.signature[3] = 'A';
-	asm("xor ax, ax");
-	asm("mov es, ax");
+	asm("xor eax, eax");
+	asm("mov es, eax");
 	asm("mov eax, %0"
 		:
 		:"g"(&vi));
 	asm("mov di, ax");
 
-	asm("mov ax, 0x4f00");
+	asm("mov eax, 0x4f00");
 	asm("int 0x10");
 
 	struct vbe_mode_info_structure v;
-	asm("xor ax, ax");
-	asm("mov es, ax");
+	asm("xor eax, eax");
+	asm("mov es, eax");
 	asm("mov eax, %0"
 		:
 		:"g"(&v));
 	asm("mov di, ax");
 
-	asm("mov ax, 0x4f01");
-	asm("mov cx, 0x4103");
+	asm("mov eax, 0x4f01");
+	asm("mov ecx, 0x4103");
 	asm("int 0x10");
+
+	uint32 gdt;
+	asm("lgdt [%0]"
+		:
+		:"g"(&gdt));
 
 	asm("mov eax, cr0");
 	asm("or al, 1");
 	asm("mov cr0, eax");
 
+	struct IDTDescr i;
+	int *idt_ptr;
+	asm("lidt [%0]"
+		:
+		:"g"(&idt_ptr));
+
+	//uint8 font[4096] =
+	//#include "VGA8.F16"
+		//;
+	/*
+	for (int i = 0; i < 256; i++)
+		print(v.framebuffer, v.pitch, i);
+	*/
+
+	while(1);
+
 	while(1) {
 		struct point a={0,0}, b={100,600};
 		for (int x = 0; x < 700; x++) {
-			clear_screen(v.framebuffer, v.pitch);
+			//clear_screen(v.framebuffer, v.pitch);
 			a.x++;
 			b.x++;
 			draw_rect(v.framebuffer, v.pitch, a,b,a.x);
-			sleep(1000);
+			//sleep(1000);
 		}
 	}
-
-	/*
-	// literal memory adress 0x09 << 2
-	void (*func) = &key;
-	unsigned short *keyhandle = 0x09 << 2;
-	*keyhandle = (short)func;
-	*((char*)keyhandle+2) = 0;
-	asm("sti");
-	*/
 }

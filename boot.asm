@@ -1,66 +1,53 @@
 ;boot.asm
 [ORG 0x7c00]
-[BITS 16]
+;[BITS 32]
     jmp main
 ;    %include "print.asm"
 main:
     ; Initialise ds with 0 so it isn't random stuff
-    xor ax, ax
-    mov ds, ax
-    mov ss, ax
+    xor eax, eax
+    mov ds, eax
+    mov ss, eax
     mov sp, 0x7C00
     cld
 
-    mov byte [drive], dl
+    mov [drive], dl
 
     mov ah, 0x00
     int 0x13
 
-    xor ax, ax
-    mov es, ax
-    mov ax, 0x9c00
-    mov bx, ax
+    xor eax, eax
+    mov es, eax
+    mov eax, 0x9c00
+    mov ebx, eax
 
     mov ah, 0x02
-    mov al, 0x02
+    mov al, 0x20
     mov ch, 0
     mov cl, 2
     mov dh, 0
-    mov dl, [drive]
+    mov dl, byte [drive]
     int 0x13
 
 	; enable A20 line
-	mov ax,0x2401
+	mov eax,0x2401
 	int 0x15
 	jb hang
 	cmp ah,0
 	jnz hang
 
-	cli
-
 	;mov ah, 0x00
-	;mov al, 0x13
+	;mov al, 0x03
 	;int 0x10
-    mov ax, 0x4f02
-    mov bx, 0x4103
-    int 0x10
 
-	; protected mode i think
-	lgdt [gdtinfo]
+	cli
 
     jmp start
 
 hang:
 	jmp hang
 
-drive db 0x00
-
-gdtinfo:
-	dw gdtend - gdt - 1
-	dw gdt
-
-gdt dd 0,0
-gdtend:
+drive db 0
 
     ; -($-$$) means just subtract the amount of bytes in the section prior from 512
     times 510-($-$$) db 0x00
