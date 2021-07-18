@@ -220,21 +220,25 @@ void _main() {
 	//uint8 font[4096] =
 	//#include "VGA8.F16"
 		//;
-	/*
 	for (int i = 0; i < 256; i++)
 		print(v.framebuffer, v.pitch, i);
-	*/
 
-	while(1);
-
+	/*
 	while(1) {
+		uint8* ptr = (uint8*)(256);
 		struct point a={0,0}, b={100,600};
-		for (int x = 0; x < 700; x++) {
-			//clear_screen(v.framebuffer, v.pitch);
-			a.x++;
-			b.x++;
-			draw_rect(v.framebuffer, v.pitch, a,b,a.x);
-			//sleep(1000);
+		for (int x = 0; x < 800; x++) {
+			for (int y = 0; y < 600; y++) {
+				//clear_screen(v.framebuffer, v.pitch);
+				a.x++;
+				b.x++;
+				//draw_rect(v.framebuffer, v.pitch, a,b,*ptr);
+				draw(v.framebuffer, v.pitch, a, *ptr);
+				//sleep(1000);
+				ptr++;
+			}
+			a.y++;
 		}
 	}
+	*/
 }

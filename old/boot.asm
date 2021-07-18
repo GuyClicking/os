@@ -1,6 +1,6 @@
 ;boot.asm
 [ORG 0x7c00]
-;[BITS 32]
+;[BITS 16]
     jmp main
 ;    %include "print.asm"
 main:
